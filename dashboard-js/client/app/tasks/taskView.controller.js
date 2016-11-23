@@ -30,6 +30,7 @@
         }
 
         function getObjFromTaskFormById(id) {
+          if(id == null) return null;
           for (var i = 0; i < taskForm.length; i++) {
             if (taskForm[i].id.includes(id)) {
               return taskForm[i];
@@ -50,24 +51,39 @@
           return aoNewUser;
         }
 
-        function getFromTaskFormObjWithIdGroupNext() {
+        function getIdFromActivityProperty(param) {
+          if(param == null) return null;
           var item = getObjFromTaskFormById("sLoginAsignee");
-
           if (item !== null) {
-            var as = getRegexContains(item.name, ';', "sSourceFieldID_sID_Group");
-            as = getRegexContains(as, ',', "sSourceFieldID_sID_Group");
+            var as = getRegexContains(item.name, ';', param);
+            as = getRegexContains(as, ',', param);
             var sID = as.split('=')[1];
-
-            return getObjFromTaskFormById(sID);
+            return sID;
           }
           return null;
+        }
+
+        $scope.updateAssigneeName = function(item){
+          if (item.id.includes("sLoginAsignee_")) {
+            if (item.id.includes("sLoginAsignee_")) {
+              for(var i = 0; i < item.enumValues.length;i++) {
+                if (item.value == item.enumValues[i].id) {
+                  var sAssigneeName= getObjFromTaskFormById(getIdFromActivityProperty("sDestinationFieldID_sName"));
+                  if (sAssigneeName != null) {
+                    sAssigneeName.value = item.enumValues[i].name;
+                    break;
+                  }
+                }
+              }
+            }
+          }
         }
 
         fillingUsers();
 
         function fillingUsers() {
           if (taskData.sLoginAssigned != null) {
-            var itemWith_sID = getFromTaskFormObjWithIdGroupNext();
+            var itemWith_sID = getObjFromTaskFormById(getIdFromActivityProperty("sSourceFieldID_sID_Group"));
 
             if (itemWith_sID !== null) {
               var group = itemWith_sID.value;
@@ -80,6 +96,7 @@
                     item.enumValues = convertUsersToEnum(users);
                     if(item.value == null){
                       item.value = item.enumValues[0].id;
+                      $scope.updateAssigneeName(item);
                     }
                   }
                 });
@@ -87,6 +104,11 @@
             }
           }
         }
+        function print(t) {
+          console.log(t);
+        }
+
+
 
         function sortUsersByAlphabet(items) {
           items.sort(function (a, b) {
@@ -106,10 +128,13 @@
           });
         }
 
-        hiddenObjWithGroupNext();
+        // it's get hidden object with IdGroupNext
+        hiddenObjById(getIdFromActivityProperty("sDestinationFieldID_sName"));
+        // it's get hidden object with IdGroupNext
+        hiddenObjById(getIdFromActivityProperty("sSourceFieldID_sID_Group"));
 
-        function hiddenObjWithGroupNext() {
-          var itemWith_sID = getFromTaskFormObjWithIdGroupNext();
+        function hiddenObjById(id) {
+          var itemWith_sID = getObjFromTaskFormById(id);
           if (itemWith_sID !== null && itemWith_sID.readable) {
             itemWith_sID.readable = false;
           }
@@ -140,13 +165,13 @@
             if(!param || !typeof param === 'string') return null;
 
             var input = param.trim(),
-                finalArray,
-                result = {};
+              finalArray,
+              result = {};
 
             var checkboxExp = input.split(',').filter(function(item){
               return (item && typeof item === 'string' ? item.trim() : '')
-                      .split('=')[0]
-                      .trim() === 'sID_CheckboxTrue';
+                  .split('=')[0]
+                  .trim() === 'sID_CheckboxTrue';
             })[0];
 
             if(!checkboxExp) return null;
@@ -156,7 +181,7 @@
             if(!finalArray || !finalArray[1]) return null;
 
             var indexes = finalArray[1].trim().match(/\d+/ig),
-                index;
+              index;
 
             if(Array.isArray(indexes)){
               index = isNaN(+indexes[0]) || +indexes[0];;
@@ -171,12 +196,12 @@
 
           function bindEnumToCheckbox(param){
             if(!param || !param.id || !param.enumValues ||
-                param.sID_CheckboxTrue === null ||
-                param.sID_CheckboxTrue === undefined) return;
+              param.sID_CheckboxTrue === null ||
+              param.sID_CheckboxTrue === undefined) return;
 
             var checkbox = {},
-                trueValues,
-                falseValues;
+              trueValues,
+              falseValues;
 
             if(isNaN(+param.sID_CheckboxTrue)){
               trueValues = param.enumValues.filter(function(o){return o.id === param.sID_CheckboxTrue});
@@ -226,19 +251,11 @@
         $scope.nID_Process = oTask.processInstanceId;
         $scope.markers = ValidationService.getValidationMarkers();
         $scope.bHasEmail = false;
-        $scope.isClarifySending = false;
         $scope.tableIsInvalid = false;
 
         $scope.validateForm = function(form) {
           var bValid = true;
-          var oValidationFormData = {};
-          angular.forEach($scope.taskForm, function (field) {
-            oValidationFormData[field.id] = angular.copy(field);
-            if(field.type === 'file'){
-              //debugger;
-            }
-          });
-          ValidationService.validateByMarkers(form, null, true, oValidationFormData);
+          ValidationService.validateByMarkers(form, null, true);
           return form.$valid && bValid;
         };
 
@@ -256,7 +273,7 @@
         var isItemFormPropertyDisabled = function (oItemFormProperty){
           if (!$scope.selectedTask || !$scope.selectedTask.assignee || !oItemFormProperty
             || !$scope.sSelectedTask || $scope.sSelectedTask === 'finished')
-          return true;
+            return true;
 
           var sID_Field = oItemFormProperty.id;
           if (sID_Field === null) {
@@ -357,7 +374,6 @@
         };
 
         $scope.clarifySend = function () {
-          $scope.isClarifySending = true;
 
           var oData = {
             nID_Process: $scope.nID_Process,
@@ -419,14 +435,12 @@
             oData.nID_Process = oData.nID_Process + lunaService.getLunaValue(oData.nID_Process);
             tasks.postServiceMessages(oData).then(function () {
               $scope.clarify = false;
-              $scope.isClarifySending = false;
               Modal.inform.success(function () {
               })('Коментар відправлено успішно');
             });
           } else {
             tasks.setTaskQuestions(oData).then(function () {
               $scope.clarify = false;
-              $scope.isClarifySending = false;
               Modal.inform.success(function () {
               })('Зауваження відправлено успішно');
             });
@@ -434,17 +448,9 @@
         };
 
         (function isTaskHasEmail() {
-          try{
-            for(var i=0; i<$scope.taskData.aField.length; i++){
-              if($scope.taskData.aField[i].sID === "email"){
-                $scope.bHasEmail = true;
-              }
-            }
-          } catch (err){
-            if($scope.taskData.code && $scope.taskData.message){
-              console.warn($scope.taskData.message);
-            } else {
-              console.error(err);
+          for(var i=0; i<$scope.taskData.aField.length; i++){
+            if($scope.taskData.aField[i].sID === "email"){
+              $scope.bHasEmail = true;
             }
           }
         })();
@@ -681,12 +687,6 @@
           }
         };
 
-
-        $scope.submitTaskQuestion = function (form) {
-          Modal.inform.submitTaskQuestion(function() {
-            return $scope.submitTask(form);});
-        };
-
         $scope.submitTaskQuestion = function (form) {
           Modal.inform.submitTaskQuestion(function() {
             return $scope.submitTask(form);});
@@ -698,9 +698,26 @@
           return true;
         }
         $scope.saveChangesTask = function (form) {
+          //$scope.validateForm(form);
+          //if(form.$invalid){
+          //  $scope.isFormInvalid = true;
+          //  return;
+          //} else {
+          //  $scope.isFormInvalid = false;
+          //}
 
           if ($scope.selectedTask && $scope.taskForm) {
             $scope.taskForm.isSubmitted = true;
+            //
+            //var unpopulatedFields = $scope.unpopulatedFields();
+            //if (unpopulatedFields.length > 0) {
+            //  setTimeout(function () {
+            //    angular.element('.submitted').first().focus();
+            //  },100);
+            //
+            //  return;
+            //}
+
             $scope.taskForm.isInProcess = true;
 
             rollbackReadonlyEnumFields();
@@ -738,6 +755,16 @@
             .catch(defaultErrorHandler);
         };
 
+
+        //tasks.submitTaskQuestion($scope.selectedTask.id, Auth.getCurrentUser().id)
+        //  .then(function (result) {
+        //    Modal.assignTask(function (event) {
+        //      $state.go('tasks.typeof.view', {type:'selfAssigned'});
+        //    }, 'Задача у вас в роботі', $scope.lightweightRefreshAfterSubmit);
+        //
+        //  })
+        //  .catch(defaultErrorHandler);
+
         $scope.unassign = function () {
           rollbackReadonlyEnumFields();
           tasks.unassign($scope.selectedTask.id)
@@ -761,7 +788,6 @@
             if (filterResult && filterResult.length === 1) {
               filterResult[0].value = result.response.id;
               filterResult[0].fileName = result.response.name;
-              filterResult[0].signInfo = result.signInfo;
             }
           }).catch(function (err) {
             Modal.inform.error()('Помилка. ' + err.code + ' ' + err.message);
@@ -821,7 +847,7 @@
 
         $scope.getMessageFileUrl = function (oMessage, oFile) {
           if(oMessage && oFile)
-          return './api/tasks/' + $scope.nID_Process + '/getMessageFile/' + oMessage.nID + '/' + oFile.sFileName;
+            return './api/tasks/' + $scope.nID_Process + '/getMessageFile/' + oMessage.nID + '/' + oFile.sFileName;
         };
 
         $scope.getCurrentUserName = function () {
@@ -896,6 +922,16 @@
           }
         };
 
+        //Asignee user.
+        $scope.choiceUser = function(login) {
+          for (var i = 0; i < taskData.aField.length; i++) {
+            if (taskData.aField[i].sID.includes("sLoginAsignee")) {
+              taskData.aField[i].sValue = login;
+              break;
+            }
+          }
+        };
+
         $scope.inUnassigned = function () {
           return $stateParams.type === "unassigned";
         };
@@ -950,31 +986,31 @@
         };
 
         var fixFieldsForTable = function (table) {
-            var tableRow;
-            if('content' in table){
-              tableRow = table.content;
-            } else {
-              tableRow = table.aRow;
-            }
-            angular.forEach(tableRow, function (row) {
-              angular.forEach(row.aField, function (field) {
-                if(field.type === 'date') {
-                  var match = /^[0-3]?[0-9].[0-3]?[0-9].(?:[0-9]{2})?[0-9]{2}$/.test(field.props.value);
-                  if(!match) {
-                    var onlyDate = field.props.value.split('T')[0];
-                    var splitDate = onlyDate.split('-');
-                    field.props.value = splitDate[2] + '/' + splitDate[1] + '/' + splitDate[0]
+          var tableRow;
+          if('content' in table){
+            tableRow = table.content;
+          } else {
+            tableRow = table.aRow;
+          }
+          angular.forEach(tableRow, function (row) {
+            angular.forEach(row.aField, function (field) {
+              if(field.type === 'date') {
+                var match = /^[0-3]?[0-9].[0-3]?[0-9].(?:[0-9]{2})?[0-9]{2}$/.test(field.props.value);
+                if(!match) {
+                  var onlyDate = field.props.value.split('T')[0];
+                  var splitDate = onlyDate.split('-');
+                  field.props.value = splitDate[2] + '/' + splitDate[1] + '/' + splitDate[0]
+                }
+              }
+              if(field.type === 'enum') {
+                angular.forEach(field.a, function (item) {
+                  if(field.value === item.id){
+                    field.value = item.name;
                   }
-                }
-                if(field.type === 'enum') {
-                  angular.forEach(field.a, function (item) {
-                    if(field.value === item.id){
-                      field.value = item.name;
-                    }
-                  })
-                }
-              })
-            });
+                })
+              }
+            })
+          });
         };
 
         var idMatch = function () {

@@ -9,6 +9,7 @@
                           style="width:100%; height:25px;;"
                           ng-options="oEnumValue.id as oEnumValue.name for oEnumValue in item.enumValues"
                           ng-required="isRequired(item)"
+                          ng-change="updateAssigneeName(item)"
                           ng-model="item.value"
                           ng-class="{submitted:isRequired(item) && isTaskSubmitted()}"></select>
 

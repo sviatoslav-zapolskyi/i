@@ -29,6 +29,8 @@
           return null;
         }
 
+        var sLoginAsignee = "sLoginAsignee";
+
         function getObjFromTaskFormById(id) {
           if(id == null) return null;
           for (var i = 0; i < taskForm.length; i++) {
@@ -53,7 +55,7 @@
 
         function getIdFromActivityProperty(param) {
           if(param == null) return null;
-          var item = getObjFromTaskFormById("sLoginAsignee");
+          var item = getObjFromTaskFormById(sLoginAsignee);
           if (item !== null) {
             var as = getRegexContains(item.name, ';', param);
             as = getRegexContains(as, ',', param);
@@ -64,8 +66,7 @@
         }
 
         $scope.updateAssigneeName = function(item){
-          if (item.id.includes("sLoginAsignee_")) {
-            if (item.id.includes("sLoginAsignee_")) {
+            if (item.id.includes(sLoginAsignee)) {
               for(var i = 0; i < item.enumValues.length;i++) {
                 if (item.value == item.enumValues[i].id) {
                   var sAssigneeName= getObjFromTaskFormById(getIdFromActivityProperty("sDestinationFieldID_sName"));
@@ -77,7 +78,6 @@
               }
             }
           }
-        }
 
         fillingUsers();
 
@@ -88,7 +88,7 @@
             if (itemWith_sID !== null) {
               var group = itemWith_sID.value;
               if (group !== null) {
-                var item = getObjFromTaskFormById("sLoginAsignee");
+                var item = getObjFromTaskFormById(sLoginAsignee);
                 item.type = "enum";
                 user.getUsers(group).then(function (users) {
                   if (users) {
@@ -128,9 +128,8 @@
           });
         }
 
-        // it's get hidden object with IdGroupNext
-        hiddenObjById(getIdFromActivityProperty("sDestinationFieldID_sName"));
-        // it's get hidden object with IdGroupNext
+
+        //hidden IdGroupNext
         hiddenObjById(getIdFromActivityProperty("sSourceFieldID_sID_Group"));
 
         function hiddenObjById(id) {
@@ -518,7 +517,7 @@
 
           var variables = "";
           for (var name in item) {
-            variables += name + ",";
+              variables += name + ",";
           }
           var as = variables.split(",");
           var result = new Array();
@@ -562,7 +561,7 @@
           }
 
           for(var i=0; i < asVariablesName.length; i++) {
-            sFormula = sFormula.replace(asVariablesName[i], "getVal(" + i + ")");
+              sFormula = sFormula.replace(asVariablesName[i], "getVal(" + i + ")");
           }
 
           $scope[sResultName] = eval(sFormula);
@@ -925,7 +924,7 @@
         //Asignee user.
         $scope.choiceUser = function(login) {
           for (var i = 0; i < taskData.aField.length; i++) {
-            if (taskData.aField[i].sID.includes("sLoginAsignee")) {
+            if (taskData.aField[i].sID.includes(sLoginAsignee)) {
               taskData.aField[i].sValue = login;
               break;
             }
